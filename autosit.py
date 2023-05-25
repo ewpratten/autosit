@@ -29,8 +29,8 @@ def needs_interface_recreation(local_ip: ipaddress.IPv4Address, remote_ip: ipadd
     
     # If the addresses changed, it needs to be recreated
     with open(f"/tmp/autosit_{tun_name}", "r") as fp:
-        old_local_ip = ipaddress.IPv4Address(fp.readline())
-        old_remote_ip = ipaddress.IPv4Address(fp.readline())
+        old_local_ip = ipaddress.IPv4Address(fp.readline().strip())
+        old_remote_ip = ipaddress.IPv4Address(fp.readline().strip())
         
     if local_ip != old_local_ip or remote_ip != old_remote_ip:
         print("Interface addresses changed")
@@ -51,9 +51,10 @@ def main() -> int:
     ap.add_argument("local_hostname", help="DNS name of the local host")
     ap.add_argument("remote_hostname", help="DNS name of the remote host")    
     ap.add_argument("--tun-name", help="Name of the tunnel interface", default="autosit")
-    ap.add_argument("--with-prefix", help="Assign an IP prefix to this interface", required=True, nargs="+")
-    ap.add_argument("--with-ipv4-route", help="Add a route for this IPv4 prefix", type=ipaddress.IPv4Network, nargs="+")
-    ap.add_argument("--with-ipv6-route", help="Add a route for this IPv6 prefix", type=ipaddress.IPv6Network, nargs="+")
+    ap.add_argument("--with-prefix", help="Assign an IP prefix to this interface", required=True, action="append")
+    ap.add_argument("--ipv4-wan-interface", help="Name of the WAN interface for IPv4", required=True)
+    ap.add_argument("--with-ipv4-route", help="Add a route for this IPv4 prefix", type=ipaddress.IPv4Network, action="append")
+    ap.add_argument("--with-ipv6-route", help="Add a route for this IPv6 prefix", type=ipaddress.IPv6Network, action="append")
     ap.add_argument("--ipv4-mode", help="Packet handling mode for IPv4", choices=["forward", "nat"], default="forward")
     ap.add_argument("--ipv6-mode", help="Packet handling mode for IPv6", choices=["forward", "nat"], default="forward")
     
@@ -86,11 +87,15 @@ def main() -> int:
         
         # Create the interface
         print("Creating interface")
-        subprocess.run(["ip", "tunnel", "add", args.tun_name, "mode", "sit", "remote", str(remote_host_ip), "local", str(local_host_ip), "mode", "any", "ttl", "255"], check=True)
+        subprocess.run(["ip", "link", "add", args.tun_name, "type", "sit", "remote", str(remote_host_ip), "local", str(local_host_ip), "mode", "any", "ttl", "255"], check=True)
         
         # Bring up the interface
         print("Bringing up interface")
         subprocess.run(["ip", "link", "set", "dev", args.tun_name, "up"], check=True)
+        
+        # Add a route to the remote host over the WAN interface
+        print(f"Adding route to remote host {remote_host_ip} over {args.ipv4_wan_interface}")
+        subprocess.run(["ip", "route", "add", str(remote_host_ip), "dev", args.ipv4_wan_interface], check=True)
         
         # Add every prefix to the interface
         for prefix in args.with_prefix:
@@ -122,8 +127,8 @@ def main() -> int:
         elif args.ipv6_mode == "forward":
             print("Enabling IPv6 forwarding")
             subprocess.run(["sysctl", "-w", "net.ipv6.conf.all.forwarding=1"], check=True)
-            subprocess.run(["iptables", "-A", "FORWARD", "-i", args.tun_name, "-j", "ACCEPT"], check=True)
-            subprocess.run(["iptables", "-A", "FORWARD", "-o", args.tun_name, "-j", "ACCEPT"], check=True)        
+            subprocess.run(["ip6tables", "-A", "FORWARD", "-i", args.tun_name, "-j", "ACCEPT"], check=True)
+            subprocess.run(["ip6tables", "-A", "FORWARD", "-o", args.tun_name, "-j", "ACCEPT"], check=True)        
         
     else:
         print(f"Interface {args.tun_name} is up to healthy. Nothing to do.")
