@@ -82,7 +82,7 @@ def main() -> int:
         save_tunnel_addrs(local_host_ip, remote_host_ip, args.tun_name)
         
         # Try bringing down the interface (this is allowed to fail)
-        subprocess.run(["ip", "link", "set", "dev", args.tun_name, "down"], capture_output=True, text=True)
+        subprocess.run(["ip", "link", "del", args.tun_name], capture_output=True, text=True)
         
         # Create the interface
         print("Creating interface")
