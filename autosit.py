@@ -51,10 +51,10 @@ def main() -> int:
     ap.add_argument("local_hostname", help="DNS name of the local host")
     ap.add_argument("remote_hostname", help="DNS name of the remote host")    
     ap.add_argument("--tun-name", help="Name of the tunnel interface", default="autosit")
-    ap.add_argument("--with-prefix", help="Assign an IP prefix to this interface", required=True, type=Union[ipaddress.IPv4Network, ipaddress.IPv6Network], nargs="+")
+    ap.add_argument("--with-prefix", help="Assign an IP prefix to this interface", required=True, nargs="+")
     ap.add_argument("--with-ipv4-route", help="Add a route for this IPv4 prefix", type=ipaddress.IPv4Network, nargs="+")
     ap.add_argument("--with-ipv6-route", help="Add a route for this IPv6 prefix", type=ipaddress.IPv6Network, nargs="+")
-    ap.add_argument("--ipv4-mode", help="Packet handling mode for IPv4", choices=["forward", "nat"], default="nat")
+    ap.add_argument("--ipv4-mode", help="Packet handling mode for IPv4", choices=["forward", "nat"], default="forward")
     ap.add_argument("--ipv6-mode", help="Packet handling mode for IPv6", choices=["forward", "nat"], default="forward")
     
     # ap.add_argument("--local-ipv6-address", help="IPv6 address for the local side of the tunnel (including CIDR prefix)", type=ipaddress.IPv6Network)
