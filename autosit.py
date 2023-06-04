@@ -95,7 +95,7 @@ def main() -> int:
         
         # Add a route to the remote host over the WAN interface
         print(f"Adding route to remote host {remote_host_ip} over {args.ipv4_wan_interface}")
-        subprocess.run(["ip", "route", "add", str(remote_host_ip), "dev", args.ipv4_wan_interface], check=True)
+        subprocess.run(["ip", "route", "add", str(remote_host_ip), "dev", args.ipv4_wan_interface], check=False)
         
         # Add every prefix to the interface
         for prefix in args.with_prefix:
